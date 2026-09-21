@@ -1,114 +1,198 @@
 const API_URL = "http://localhost:8080/api";
 
-// ==================== Zones ====================
+// ==================== API Fetch ====================
 
-export async function getZones() {
-    const response = await fetch(`${API_URL}/zones`);
+export async function apiFetch(endpoint, options = {}) {
+    const token = localStorage.getItem("token");
 
-    if (!response.ok) {
-        throw new Error("ไม่สามารถโหลดข้อมูลโซนได้");
+    const response = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        headers: {
+            ...(options.body ? { "Content-Type": "application/json" } : {}),
+            ...(options.headers || {}),
+            ...(token
+                ? {
+                    Authorization: `Bearer ${token}`,
+                }
+                : {}),
+        },
+    });
+
+    const result = await response.json();
+
+    // Token ไม่มี / หมดอายุ
+    if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        window.location.href = "/login";
+
+        throw new Error("Session หมดอายุ กรุณาเข้าสู่ระบบใหม่");
     }
 
-    return response.json();
+    if (!response.ok) {
+        throw new Error(
+            result.message || "เกิดข้อผิดพลาด"
+        );
+    }
+
+    return result;
 }
 
-export async function createZone(data) {
-    const response = await fetch(`${API_URL}/zones`, {
+
+// ==================== Auth ====================
+
+export async function loginUser(username, password) {
+    const response = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+            username,
+            password,
+        }),
     });
 
+    const result = await response.json();
+
     if (!response.ok) {
-        throw new Error("ไม่สามารถเพิ่มโซนได้");
+        throw new Error(
+            result.message || "เข้าสู่ระบบไม่สำเร็จ"
+        );
     }
 
-    return response.json();
+    return result;
+}
+
+
+// ==================== Zones ====================
+
+export async function getZones() {
+    return apiFetch("/zones");
+}
+
+export async function createZone(data) {
+    return apiFetch("/zones", {
+        method: "POST",
+        body: JSON.stringify(data),
+    });
 }
 
 export async function updateZone(id, data) {
-    const response = await fetch(`${API_URL}/zones/${id}`, {
+    return apiFetch(`/zones/${id}`, {
         method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-        },
         body: JSON.stringify(data),
     });
-
-    if (!response.ok) {
-        throw new Error("ไม่สามารถแก้ไขโซนได้");
-    }
-
-    return response.json();
 }
 
 export async function deleteZone(id) {
-    const response = await fetch(`${API_URL}/zones/${id}`, {
+    return apiFetch(`/zones/${id}`, {
         method: "DELETE",
     });
-
-    if (!response.ok) {
-        throw new Error("ไม่สามารถลบโซนได้");
-    }
-
-    return response.json();
 }
 
 
 // ==================== Stalls ====================
 
 export async function getStalls() {
-    const response = await fetch(`${API_URL}/stalls`);
-
-    if (!response.ok) {
-        throw new Error("ไม่สามารถโหลดข้อมูลแผงค้าได้");
-    }
-
-    return response.json();
+    return apiFetch("/stalls");
 }
 
 export async function createStall(data) {
-    const response = await fetch(`${API_URL}/stalls`, {
+    return apiFetch("/stalls", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
         body: JSON.stringify(data),
     });
-
-    if (!response.ok) {
-        throw new Error("ไม่สามารถเพิ่มแผงค้าได้");
-    }
-
-    return response.json();
 }
 
 export async function updateStall(id, data) {
-    const response = await fetch(`${API_URL}/stalls/${id}`, {
+    return apiFetch(`/stalls/${id}`, {
         method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-        },
         body: JSON.stringify(data),
     });
-
-    if (!response.ok) {
-        throw new Error("ไม่สามารถแก้ไขแผงค้าได้");
-    }
-
-    return response.json();
 }
 
 export async function deleteStall(id) {
-    const response = await fetch(`${API_URL}/stalls/${id}`, {
+    return apiFetch(`/stalls/${id}`, {
         method: "DELETE",
     });
+}
 
-    if (!response.ok) {
-        throw new Error("ไม่สามารถลบแผงค้าได้");
-    }
+// ==================== Tenants ====================
 
-    return response.json();
+export async function getTenants() {
+    return apiFetch("/tenants");
+}
+
+export async function createTenant(data) {
+    return apiFetch("/tenants", {
+        method: "POST",
+        body: JSON.stringify(data),
+    });
+}
+
+export async function updateTenant(id, data) {
+    return apiFetch(`/tenants/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+    });
+}
+
+export async function deleteTenant(id) {
+    return apiFetch(`/tenants/${id}`, {
+        method: "DELETE",
+    });
+}
+
+// ==================== Contracts ====================
+
+export async function getContracts() {
+    return apiFetch("/contracts");
+}
+
+export async function createContract(data) {
+    return apiFetch("/contracts", {
+        method: "POST",
+        body: JSON.stringify(data),
+    });
+}
+
+export async function updateContract(id, data) {
+    return apiFetch(`/contracts/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+    });
+}
+
+export async function deleteContract(id) {
+    return apiFetch(`/contracts/${id}`, {
+        method: "DELETE",
+    });
+}
+
+// ==================== Users ====================
+
+export async function getUsers() {
+    return apiFetch("/users");
+}
+
+export async function createUser(data) {
+    return apiFetch("/users", {
+        method: "POST",
+        body: JSON.stringify(data),
+    });
+}
+
+export async function updateUser(id, data) {
+    return apiFetch(`/users/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+    });
+}
+
+export async function deleteUser(id) {
+    return apiFetch(`/users/${id}`, {
+        method: "DELETE",
+    });
 }

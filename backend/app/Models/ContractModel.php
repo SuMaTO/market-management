@@ -9,7 +9,6 @@ class ContractModel extends Model
     protected $table         = 'contracts';
     protected $primaryKey    = 'contract_id';
     protected $returnType    = 'array';
-    protected $useTimestamps = false;
 
     protected $allowedFields = [
         'tenant_id',
@@ -22,4 +21,5 @@ class ContractModel extends Model
         'created_by',
         'created_at',
     ];
+    protected $useTimestamps = false;
 }

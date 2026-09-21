@@ -38,8 +38,7 @@ class CreateUtilityRatesTable extends Migration
 
         $this->forge->addKey('rate_id', true);
         $this->forge->addUniqueKey('utility_type');
-
-        $this->forge->createTable('utility_rates');
+        
     }
 
     public function down()

@@ -1,670 +1,533 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+    getContracts,
+    createContract,
+    updateContract,
+    deleteContract,
+    getTenants,
+    getStalls,
+} from "../services/api";
 
 function Contracts() {
-  const tenants = [
-    {
-      id: 1,
-      code: "TN001",
-      name: "สมชาย ใจดี",
-    },
-    {
-      id: 2,
-      code: "TN002",
-      name: "สมหญิง รักดี",
-    },
-    {
-      id: 3,
-      code: "TN003",
-      name: "วิชัย มั่นคง",
-    },
-  ];
+    const [contracts, setContracts] = useState([]);
+    const [tenants, setTenants] = useState([]);
+    const [stalls, setStalls] = useState([]);
 
-  const stalls = [
-    {
-      id: 1,
-      code: "A001",
-      zone: "โซน A",
-      baseRent: 1500,
-    },
-    {
-      id: 2,
-      code: "A002",
-      zone: "โซน A",
-      baseRent: 1500,
-    },
-    {
-      id: 3,
-      code: "A003",
-      zone: "โซน A",
-      baseRent: 1800,
-    },
-    {
-      id: 4,
-      code: "B001",
-      zone: "โซน B",
-      baseRent: 1200,
-    },
-  ];
+    const [loading, setLoading] = useState(true);
+    const [showForm, setShowForm] = useState(false);
+    const [editingContract, setEditingContract] = useState(null);
 
-  const [contracts, setContracts] = useState([
-    {
-      id: 1,
-      contractNo: "CT-0001",
-      tenantId: 1,
-      stallId: 2,
-      startDate: "2026-01-01",
-      endDate: "2026-12-31",
-      rentAmount: 1500,
-      paymentFrequency: "รายเดือน",
-      deposit: 3000,
-      status: "ใช้งาน",
-    },
-    {
-      id: 2,
-      contractNo: "CT-0002",
-      tenantId: 2,
-      stallId: 4,
-      startDate: "2026-01-01",
-      endDate: "2026-12-31",
-      rentAmount: 1200,
-      paymentFrequency: "รายปี",
-      deposit: 2400,
-      status: "ใช้งาน",
-    },
-  ]);
-
-  const [showModal, setShowModal] = useState(false);
-  const [editingContract, setEditingContract] = useState(null);
-
-  const [formData, setFormData] = useState({
-    contractNo: "",
-    tenantId: "",
-    stallId: "",
-    startDate: "",
-    endDate: "",
-    rentAmount: "",
-    paymentFrequency: "รายเดือน",
-    deposit: "",
-    status: "ใช้งาน",
-  });
-
-  const resetForm = () => {
-    setFormData({
-      contractNo: "",
-      tenantId: "",
-      stallId: "",
-      startDate: "",
-      endDate: "",
-      rentAmount: "",
-      paymentFrequency: "รายเดือน",
-      deposit: "",
-      status: "ใช้งาน",
-    });
-  };
-
-  const handleAdd = () => {
-    setEditingContract(null);
-    resetForm();
-    setShowModal(true);
-  };
-
-  const handleEdit = (contract) => {
-    setEditingContract(contract);
-
-    setFormData({
-      contractNo: contract.contractNo,
-      tenantId: contract.tenantId,
-      stallId: contract.stallId,
-      startDate: contract.startDate,
-      endDate: contract.endDate,
-      rentAmount: contract.rentAmount,
-      paymentFrequency: contract.paymentFrequency,
-      deposit: contract.deposit,
-      status: contract.status,
+    const [formData, setFormData] = useState({
+        tenant_id: "",
+        stall_id: "",
+        contract_no: "",
+        start_date: "",
+        end_date: "",
+        deposit_amount: "",
+        status: "active",
     });
 
-    setShowModal(true);
-  };
+    // โหลดข้อมูลทั้งหมด
+    const loadData = async () => {
+        try {
+            setLoading(true);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+            const [
+                contractResult,
+                tenantResult,
+                stallResult,
+            ] = await Promise.all([
+                getContracts(),
+                getTenants(),
+                getStalls(),
+            ]);
 
-    if (
-      !formData.contractNo.trim() ||
-      !formData.tenantId ||
-      !formData.stallId ||
-      !formData.startDate ||
-      !formData.endDate ||
-      !formData.rentAmount
-    ) {
-      alert("กรุณากรอกข้อมูลที่จำเป็นให้ครบ");
-      return;
-    }
+            if (contractResult.status) {
+                setContracts(contractResult.data);
+            }
 
-    if (formData.startDate > formData.endDate) {
-      alert("วันที่เริ่มสัญญาต้องไม่เกินวันที่สิ้นสุดสัญญา");
-      return;
-    }
+            if (tenantResult.status) {
+                setTenants(tenantResult.data);
+            }
 
-    const duplicateContractNo = contracts.some(
-      (contract) =>
-        contract.contractNo.toLowerCase() ===
-          formData.contractNo.trim().toLowerCase() &&
-        contract.id !== editingContract?.id
-    );
-
-    if (duplicateContractNo) {
-      alert("เลขที่สัญญานี้มีอยู่แล้ว");
-      return;
-    }
-
-    const contractData = {
-      contractNo: formData.contractNo
-        .trim()
-        .toUpperCase(),
-      tenantId: Number(formData.tenantId),
-      stallId: Number(formData.stallId),
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      rentAmount: Number(formData.rentAmount),
-      paymentFrequency: formData.paymentFrequency,
-      deposit: Number(formData.deposit) || 0,
-      status: formData.status,
+            if (stallResult.status) {
+                setStalls(stallResult.data);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("ไม่สามารถโหลดข้อมูลได้");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    if (editingContract) {
-      setContracts(
-        contracts.map((contract) =>
-          contract.id === editingContract.id
-            ? {
-                ...contract,
-                ...contractData,
-              }
-            : contract
-        )
-      );
-    } else {
-      setContracts([
-        ...contracts,
-        {
-          id: Date.now(),
-          ...contractData,
-        },
-      ]);
-    }
+    useEffect(() => {
+        loadData();
+    }, []);
 
-    setShowModal(false);
-  };
+    // เปิดเพิ่ม
+    const handleAdd = () => {
+        setEditingContract(null);
 
-  const handleDelete = (id) => {
-    const confirmDelete = window.confirm(
-      "ต้องการลบสัญญาเช่านี้หรือไม่?"
-    );
+        setFormData({
+            tenant_id: "",
+            stall_id: "",
+            contract_no: "",
+            start_date: "",
+            end_date: "",
+            deposit_amount: "",
+            status: "active",
+        });
 
-    if (!confirmDelete) return;
+        setShowForm(true);
+    };
 
-    setContracts(
-      contracts.filter((contract) => contract.id !== id)
-    );
-  };
+    // เปิดแก้ไข
+    const handleEdit = (contract) => {
+        setEditingContract(contract);
 
-  const getTenantName = (tenantId) => {
-    const tenant = tenants.find(
-      (tenant) => tenant.id === tenantId
-    );
+        setFormData({
+            tenant_id: contract.tenant_id || "",
+            stall_id: contract.stall_id || "",
+            contract_no: contract.contract_no || "",
+            start_date: contract.start_date || "",
+            end_date: contract.end_date || "",
+            deposit_amount: contract.deposit_amount || "",
+            status: contract.status || "active",
+        });
 
-    return tenant
-      ? `${tenant.code} - ${tenant.name}`
-      : "-";
-  };
+        setShowForm(true);
+    };
 
-  const getStallName = (stallId) => {
-    const stall = stalls.find(
-      (stall) => stall.id === stallId
-    );
+    const handleChange = (e) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value,
+        });
+    };
 
-    return stall
-      ? `${stall.code} (${stall.zone})`
-      : "-";
-  };
+    // บันทึก
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-  const getStatusClass = (status) => {
-    switch (status) {
-      case "ใช้งาน":
-        return "bg-green-100 text-green-700";
+        if (!formData.tenant_id) {
+            alert("กรุณาเลือกผู้เช่า");
+            return;
+        }
 
-      case "สิ้นสุด":
-        return "bg-gray-100 text-gray-600";
+        if (!formData.stall_id) {
+            alert("กรุณาเลือกแผงค้า");
+            return;
+        }
 
-      case "ยกเลิก":
-        return "bg-red-100 text-red-700";
+        if (!formData.start_date || !formData.end_date) {
+            alert("กรุณาระบุวันเริ่มต้นและวันสิ้นสุด");
+            return;
+        }
 
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
-  };
+        try {
+            const data = {
+                ...formData,
+                tenant_id: Number(formData.tenant_id),
+                stall_id: Number(formData.stall_id),
+                deposit_amount: Number(formData.deposit_amount || 0),
+            };
 
-  return (
-    <div>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">
-            สัญญาเช่า
-          </h2>
+            if (editingContract) {
+                await updateContract(
+                    editingContract.contract_id,
+                    data
+                );
 
-          <p className="mt-1 text-gray-500">
-            จัดการสัญญาเช่าระยะยาวและเงื่อนไขการชำระค่าเช่า
-          </p>
-        </div>
+                alert("แก้ไขสัญญาสำเร็จ");
+            } else {
+                await createContract(data);
 
-        <button
-          onClick={handleAdd}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          + เพิ่มสัญญาเช่า
-        </button>
-      </div>
+                alert("เพิ่มสัญญาสำเร็จ");
+            }
 
-      {/* Table */}
-      <div className="mt-6 bg-white rounded-xl shadow-sm border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-5 py-4 text-left text-sm font-semibold">
-                  ลำดับ
-                </th>
+            setShowForm(false);
+            await loadData();
 
-                <th className="px-5 py-4 text-left text-sm font-semibold">
-                  เลขที่สัญญา
-                </th>
+        } catch (error) {
+            console.error(error);
+            alert(error.message);
+        }
+    };
 
-                <th className="px-5 py-4 text-left text-sm font-semibold">
-                  ผู้เช่า
-                </th>
+    // ลบ
+    const handleDelete = async (id) => {
+        if (!confirm("ต้องการลบสัญญานี้หรือไม่?")) {
+            return;
+        }
 
-                <th className="px-5 py-4 text-left text-sm font-semibold">
-                  แผงค้า
-                </th>
+        try {
+            await deleteContract(id);
 
-                <th className="px-5 py-4 text-left text-sm font-semibold">
-                  ระยะเวลา
-                </th>
+            alert("ลบสัญญาสำเร็จ");
 
-                <th className="px-5 py-4 text-left text-sm font-semibold">
-                  ค่าเช่า
-                </th>
+            await loadData();
 
-                <th className="px-5 py-4 text-center text-sm font-semibold">
-                  รอบชำระ
-                </th>
+        } catch (error) {
+            console.error(error);
+            alert(error.message);
+        }
+    };
 
-                <th className="px-5 py-4 text-center text-sm font-semibold">
-                  สถานะ
-                </th>
+    // หาชื่อผู้เช่า
+    const getTenantName = (id) => {
+        const tenant = tenants.find(
+            (item) => Number(item.tenant_id) === Number(id)
+        );
 
-                <th className="px-5 py-4 text-center text-sm font-semibold">
-                  จัดการ
-                </th>
-              </tr>
-            </thead>
+        return tenant
+            ? `${tenant.first_name} ${tenant.last_name}`
+            : "-";
+    };
 
-            <tbody className="divide-y">
-              {contracts.map((contract, index) => (
-                <tr
-                  key={contract.id}
-                  className="hover:bg-gray-50"
+    // หาเลขแผง
+    const getStallCode = (id) => {
+        const stall = stalls.find(
+            (item) => Number(item.stall_id) === Number(id)
+        );
+
+        return stall ? stall.stall_code : "-";
+    };
+
+    return (
+        <div className="p-6">
+
+            <div className="flex justify-between items-center mb-6">
+
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-800">
+                        จัดการสัญญาเช่า
+                    </h1>
+
+                    <p className="text-gray-500 mt-1">
+                        จัดการสัญญาเช่าของผู้เช่าและแผงค้า
+                    </p>
+                </div>
+
+                <button
+                    onClick={handleAdd}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  <td className="px-5 py-4">
-                    {index + 1}
-                  </td>
+                    + เพิ่มสัญญา
+                </button>
 
-                  <td className="px-5 py-4 font-semibold">
-                    {contract.contractNo}
-                  </td>
-
-                  <td className="px-5 py-4">
-                    {getTenantName(contract.tenantId)}
-                  </td>
-
-                  <td className="px-5 py-4">
-                    {getStallName(contract.stallId)}
-                  </td>
-
-                  <td className="px-5 py-4 whitespace-nowrap">
-                    {contract.startDate}
-                    <br />
-                    <span className="text-gray-500 text-sm">
-                      ถึง {contract.endDate}
-                    </span>
-                  </td>
-
-                  <td className="px-5 py-4">
-                    {contract.rentAmount.toLocaleString()} บาท
-                  </td>
-
-                  <td className="px-5 py-4 text-center">
-                    {contract.paymentFrequency}
-                  </td>
-
-                  <td className="px-5 py-4 text-center">
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-sm ${getStatusClass(
-                        contract.status
-                      )}`}
-                    >
-                      {contract.status}
-                    </span>
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <div className="flex justify-center gap-2">
-                      <button
-                        onClick={() => handleEdit(contract)}
-                        className="px-3 py-1.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
-                      >
-                        แก้ไข
-                      </button>
-
-                      <button
-                        onClick={() =>
-                          handleDelete(contract.id)
-                        }
-                        className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                      >
-                        ลบ
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-
-              {contracts.length === 0 && (
-                <tr>
-                  <td
-                    colSpan="9"
-                    className="px-6 py-10 text-center text-gray-500"
-                  >
-                    ยังไม่มีข้อมูลสัญญาเช่า
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white w-full max-w-2xl rounded-xl shadow-lg max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 border-b">
-              <h3 className="text-lg font-semibold">
-                {editingContract
-                  ? "แก้ไขสัญญาเช่า"
-                  : "เพิ่มสัญญาเช่า"}
-              </h3>
-
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-500 hover:text-gray-800 text-xl"
-              >
-                ×
-              </button>
             </div>
 
-            <form
-              onSubmit={handleSubmit}
-              className="p-5 space-y-4"
-            >
-              {/* Contract No */}
-              <div>
-                <label className="block mb-1 text-sm font-medium">
-                  เลขที่สัญญา
-                </label>
+            {showForm && (
+                <div className="bg-white rounded-xl shadow p-6 mb-6">
 
-                <input
-                  type="text"
-                  value={formData.contractNo}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      contractNo: e.target.value
-                        .toUpperCase()
-                        .replace(/\s/g, ""),
-                    })
-                  }
-                  placeholder="เช่น CT-0003"
-                  className="w-full border rounded-lg px-4 py-2.5"
-                />
-              </div>
+                    <h2 className="text-lg font-semibold mb-4">
+                        {editingContract
+                            ? "แก้ไขสัญญาเช่า"
+                            : "เพิ่มสัญญาเช่า"}
+                    </h2>
 
-              {/* Tenant */}
-              <div>
-                <label className="block mb-1 text-sm font-medium">
-                  ผู้เช่า
-                </label>
+                    <form onSubmit={handleSubmit}>
 
-                <select
-                  value={formData.tenantId}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      tenantId: e.target.value,
-                    })
-                  }
-                  className="w-full border rounded-lg px-4 py-2.5"
-                >
-                  <option value="">
-                    -- เลือกผู้เช่า --
-                  </option>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                  {tenants.map((tenant) => (
-                    <option
-                      key={tenant.id}
-                      value={tenant.id}
-                    >
-                      {tenant.code} - {tenant.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                            {/* ผู้เช่า */}
+                            <div>
+                                <label className="block mb-2 text-sm font-medium">
+                                    ผู้เช่า
+                                </label>
 
-              {/* Stall */}
-              <div>
-                <label className="block mb-1 text-sm font-medium">
-                  แผงค้า
-                </label>
+                                <select
+                                    name="tenant_id"
+                                    value={formData.tenant_id}
+                                    onChange={handleChange}
+                                    className="w-full border rounded-lg px-3 py-2"
+                                >
+                                    <option value="">
+                                        -- เลือกผู้เช่า --
+                                    </option>
 
-                <select
-                  value={formData.stallId}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      stallId: e.target.value,
-                    })
-                  }
-                  className="w-full border rounded-lg px-4 py-2.5"
-                >
-                  <option value="">
-                    -- เลือกแผงค้า --
-                  </option>
+                                    {tenants.map((tenant) => (
+                                        <option
+                                            key={tenant.tenant_id}
+                                            value={tenant.tenant_id}
+                                        >
+                                            {tenant.first_name}{" "}
+                                            {tenant.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
 
-                  {stalls.map((stall) => (
-                    <option
-                      key={stall.id}
-                      value={stall.id}
-                    >
-                      {stall.code} - {stall.zone}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                            {/* แผง */}
+                            <div>
+                                <label className="block mb-2 text-sm font-medium">
+                                    แผงค้า
+                                </label>
 
-              {/* Dates */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block mb-1 text-sm font-medium">
-                    วันที่เริ่มสัญญา
-                  </label>
+                                <select
+                                    name="stall_id"
+                                    value={formData.stall_id}
+                                    onChange={handleChange}
+                                    className="w-full border rounded-lg px-3 py-2"
+                                >
+                                    <option value="">
+                                        -- เลือกแผงค้า --
+                                    </option>
 
-                  <input
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        startDate: e.target.value,
-                      })
-                    }
-                    className="w-full border rounded-lg px-4 py-2.5"
-                  />
+                                    {stalls.map((stall) => (
+                                        <option
+                                            key={stall.stall_id}
+                                            value={stall.stall_id}
+                                        >
+                                            {stall.stall_code}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* เลขสัญญา */}
+                            <div>
+                                <label className="block mb-2 text-sm font-medium">
+                                    เลขที่สัญญา
+                                </label>
+
+                                <input
+                                    type="text"
+                                    value={
+                                        editingContract
+                                            ? formData.contract_no
+                                            : "ระบบจะสร้างอัตโนมัติ"
+                                    }
+                                    readOnly
+                                    disabled={!editingContract}
+                                    className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-600"
+                                />
+
+                                {!editingContract && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        ระบบจะกำหนดเลขที่สัญญาให้อัตโนมัติเมื่อบันทึก
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* เงินประกัน */}
+                            <div>
+                                <label className="block mb-2 text-sm font-medium">
+                                    เงินประกัน
+                                </label>
+
+                                <input
+                                    type="number"
+                                    name="deposit_amount"
+                                    value={formData.deposit_amount}
+                                    onChange={handleChange}
+                                    min="0"
+                                    className="w-full border rounded-lg px-3 py-2"
+                                />
+                            </div>
+
+                            {/* วันเริ่ม */}
+                            <div>
+                                <label className="block mb-2 text-sm font-medium">
+                                    วันเริ่มสัญญา
+                                </label>
+
+                                <input
+                                    type="date"
+                                    name="start_date"
+                                    value={formData.start_date}
+                                    onChange={handleChange}
+                                    className="w-full border rounded-lg px-3 py-2"
+                                />
+                            </div>
+
+                            {/* วันสิ้นสุด */}
+                            <div>
+                                <label className="block mb-2 text-sm font-medium">
+                                    วันสิ้นสุดสัญญา
+                                </label>
+
+                                <input
+                                    type="date"
+                                    name="end_date"
+                                    value={formData.end_date}
+                                    onChange={handleChange}
+                                    className="w-full border rounded-lg px-3 py-2"
+                                />
+                            </div>
+
+                            {/* สถานะ */}
+                            <div>
+                                <label className="block mb-2 text-sm font-medium">
+                                    สถานะ
+                                </label>
+
+                                <select
+                                    name="status"
+                                    value={formData.status}
+                                    onChange={handleChange}
+                                    className="w-full border rounded-lg px-3 py-2"
+                                >
+                                    <option value="active">
+                                        ใช้งานอยู่
+                                    </option>
+
+                                    <option value="expired">
+                                        หมดอายุ
+                                    </option>
+
+                                    <option value="cancelled">
+                                        ยกเลิก
+                                    </option>
+                                </select>
+                            </div>
+
+                        </div>
+
+                        <div className="flex gap-2 mt-5">
+
+                            <button
+                                type="submit"
+                                className="px-4 py-2 bg-green-600 text-white rounded-lg"
+                            >
+                                บันทึก
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowForm(false)}
+                                className="px-4 py-2 bg-gray-200 rounded-lg"
+                            >
+                                ยกเลิก
+                            </button>
+
+                        </div>
+
+                    </form>
                 </div>
+            )}
 
-                <div>
-                  <label className="block mb-1 text-sm font-medium">
-                    วันที่สิ้นสุดสัญญา
-                  </label>
+            {/* ตาราง */}
+            <div className="bg-white rounded-xl shadow overflow-hidden">
 
-                  <input
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        endDate: e.target.value,
-                      })
-                    }
-                    className="w-full border rounded-lg px-4 py-2.5"
-                  />
-                </div>
-              </div>
+                {loading ? (
+                    <div className="p-6 text-center">
+                        กำลังโหลดข้อมูล...
+                    </div>
+                ) : contracts.length === 0 ? (
+                    <div className="p-6 text-center text-gray-500">
+                        ยังไม่มีข้อมูลสัญญา
+                    </div>
+                ) : (
+                    <table className="w-full">
 
-              {/* Rent */}
-              <div>
-                <label className="block mb-1 text-sm font-medium">
-                  ค่าเช่าตามสัญญา
-                </label>
+                        <thead className="bg-gray-100">
+                            <tr>
 
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.rentAmount}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      rentAmount: e.target.value,
-                    })
-                  }
-                  placeholder="เช่น 1500"
-                  className="w-full border rounded-lg px-4 py-2.5"
-                />
+                                <th className="px-6 py-3 text-left">
+                                    เลขที่สัญญา
+                                </th>
 
-                <p className="text-xs text-gray-500 mt-1">
-                  ค่าเช่าจริงที่ตกลงกับผู้เช่า สามารถแตกต่างจากค่าเช่าพื้นฐานของแผงได้
-                </p>
-              </div>
+                                <th className="px-6 py-3 text-left">
+                                    ผู้เช่า
+                                </th>
 
-              {/* Payment Frequency */}
-              <div>
-                <label className="block mb-1 text-sm font-medium">
-                  รอบการชำระค่าเช่า
-                </label>
+                                <th className="px-6 py-3 text-left">
+                                    แผงค้า
+                                </th>
 
-                <select
-                  value={formData.paymentFrequency}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      paymentFrequency: e.target.value,
-                    })
-                  }
-                  className="w-full border rounded-lg px-4 py-2.5"
-                >
-                  <option value="รายเดือน">
-                    รายเดือน
-                  </option>
+                                <th className="px-6 py-3 text-left">
+                                    ระยะเวลา
+                                </th>
 
-                  <option value="รายปี">
-                    รายปี
-                  </option>
-                </select>
+                                <th className="px-6 py-3 text-left">
+                                    สถานะ
+                                </th>
 
-                <p className="text-xs text-gray-500 mt-1">
-                  ใช้กำหนดรอบการสร้างใบแจ้งหนี้ในขั้นตอนถัดไป
-                </p>
-              </div>
+                                <th className="px-6 py-3 text-center">
+                                    จัดการ
+                                </th>
 
-              {/* Deposit */}
-              <div>
-                <label className="block mb-1 text-sm font-medium">
-                  เงินประกัน
-                </label>
+                            </tr>
+                        </thead>
 
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.deposit}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      deposit: e.target.value,
-                    })
-                  }
-                  placeholder="เช่น 3000"
-                  className="w-full border rounded-lg px-4 py-2.5"
-                />
-              </div>
+                        <tbody>
 
-              {/* Status */}
-              <div>
-                <label className="block mb-1 text-sm font-medium">
-                  สถานะสัญญา
-                </label>
+                            {contracts.map((contract) => (
 
-                <select
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      status: e.target.value,
-                    })
-                  }
-                  className="w-full border rounded-lg px-4 py-2.5"
-                >
-                  <option value="ใช้งาน">ใช้งาน</option>
-                  <option value="สิ้นสุด">สิ้นสุด</option>
-                  <option value="ยกเลิก">ยกเลิก</option>
-                </select>
-              </div>
+                                <tr
+                                    key={contract.contract_id}
+                                    className="border-t"
+                                >
 
-              {/* Buttons */}
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 border rounded-lg hover:bg-gray-50"
-                >
-                  ยกเลิก
-                </button>
+                                    <td className="px-6 py-4 font-medium">
+                                        {contract.contract_no}
+                                    </td>
 
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  {editingContract
-                    ? "บันทึกการแก้ไข"
-                    : "เพิ่มสัญญาเช่า"}
-                </button>
-              </div>
-            </form>
-          </div>
+                                    <td className="px-6 py-4">
+                                        {getTenantName(
+                                            contract.tenant_id
+                                        )}
+                                    </td>
+
+                                    <td className="px-6 py-4">
+                                        {getStallCode(
+                                            contract.stall_id
+                                        )}
+                                    </td>
+
+                                    <td className="px-6 py-4">
+                                        {contract.start_date}
+                                        {" - "}
+                                        {contract.end_date}
+                                    </td>
+
+                                    <td className="px-6 py-4">
+                                        {contract.status === "active"
+                                            ? "ใช้งานอยู่"
+                                            : contract.status === "expired"
+                                            ? "หมดอายุ"
+                                            : "ยกเลิก"}
+                                    </td>
+
+                                    <td className="px-6 py-4 text-center">
+
+                                        <button
+                                            onClick={() =>
+                                                handleEdit(contract)
+                                            }
+                                            className="px-3 py-1 mr-2 bg-yellow-500 text-white rounded"
+                                        >
+                                            แก้ไข
+                                        </button>
+
+                                        <button
+                                            onClick={() =>
+                                                handleDelete(
+                                                    contract.contract_id
+                                                )
+                                            }
+                                            className="px-3 py-1 bg-red-600 text-white rounded"
+                                        >
+                                            ลบ
+                                        </button>
+
+                                    </td>
+
+                                </tr>
+
+                            ))}
+
+                        </tbody>
+
+                    </table>
+                )}
+
+            </div>
+
         </div>
-      )}
-    </div>
-  );
+    );
 }
 
 export default Contracts;

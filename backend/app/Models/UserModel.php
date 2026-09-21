@@ -6,10 +6,13 @@ use CodeIgniter\Model;
 
 class UserModel extends Model
 {
-    protected $table            = 'users';
-    protected $primaryKey       = 'user_id';
-    protected $returnType       = 'array';
-    protected $useTimestamps    = false;
+    protected $table = 'users';
+
+    protected $primaryKey = 'user_id';
+
+    protected $returnType = 'array';
+
+    protected $useTimestamps = false;
 
     protected $allowedFields = [
         'username',
@@ -19,5 +22,6 @@ class UserModel extends Model
         'phone',
         'email',
         'status',
+        'created_at',
     ];
 }

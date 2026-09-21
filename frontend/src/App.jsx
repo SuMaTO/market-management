@@ -15,6 +15,7 @@ import Invoices from "./pages/Invoices";
 import Payments from "./pages/Payments";
 import Receipts from "./pages/Receipts";
 import Reports from "./pages/Reports";
+import Users from "./pages/Users";
 
 function App() {
   return (
@@ -130,6 +131,16 @@ function App() {
                       element={
                         <ProtectedRoute roles={["admin", "manager"]}>
                           <Reports />
+                        </ProtectedRoute>
+                      }
+                    />
+                    
+                    {/* จัดการผู้ใช้งาน */}
+                    <Route
+                      path="/users"
+                      element={
+                        <ProtectedRoute roles={["admin"]}>
+                          <Users />
                         </ProtectedRoute>
                       }
                     />

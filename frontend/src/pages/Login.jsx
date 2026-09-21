@@ -1,90 +1,95 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { loginUser } from "../services/api";
 import { useAuth } from "../auth/AuthContext";
 
 function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+    const navigate = useNavigate();
+    const { login } = useAuth();
 
-  const { login } = useAuth();
-  const navigate = useNavigate();
+        const [username, setUsername] = useState("");
+        const [password, setPassword] = useState("");
+        const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+        const handleLogin = async (e) => {
+        e.preventDefault();
 
-    const success = login(username, password);
+        try {
+            setLoading(true);
 
-    if (success) {
-      navigate("/dashboard");
-    } else {
-      setError("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
-    }
-  };
+            const result = await loginUser(username, password);
 
-  return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-lg">
-        <h1 className="text-2xl font-bold text-center text-gray-800">
-          ระบบบริหารจัดการตลาด
-        </h1>
+            console.log("LOGIN RESULT:", result);
 
-        <p className="text-center text-gray-500 mt-2">
-          กรุณาเข้าสู่ระบบ
-        </p>
+            login(result.user, result.token);
 
-        {error && (
-          <div className="mt-4 bg-red-100 text-red-600 p-3 rounded-lg">
-            {error}
-          </div>
-        )}
+            navigate("/");
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div>
-            <label className="block mb-1 text-sm font-medium">
-              ชื่อผู้ใช้
-            </label>
+        } catch (error) {
+            console.error("LOGIN ERROR:", error);
+            alert(error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full border rounded-lg px-4 py-3"
-              placeholder="Username"
-            />
-          </div>
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-100">
 
-          <div>
-            <label className="block mb-1 text-sm font-medium">
-              รหัสผ่าน
-            </label>
+            <div className="w-full max-w-md bg-white p-8 rounded-xl shadow">
 
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border rounded-lg px-4 py-3"
-              placeholder="Password"
-            />
-          </div>
+                <h1 className="text-2xl font-bold text-center mb-6">
+                    เข้าสู่ระบบ
+                </h1>
 
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
-          >
-            เข้าสู่ระบบ
-          </button>
-        </form>
+                <form onSubmit={handleLogin}>
 
-        <div className="mt-6 text-sm text-gray-500">
-          <p>สำหรับทดสอบระบบ:</p>
-          <p>admin / 1234</p>
-          <p>staff / 1234</p>
-          <p>manager / 1234</p>
+                    <div className="mb-4">
+                        <label className="block mb-2">
+                            Username
+                        </label>
+
+                        <input
+                            type="text"
+                            value={username}
+                            onChange={(e) =>
+                                setUsername(e.target.value)
+                            }
+                            className="w-full border rounded-lg px-3 py-2"
+                        />
+                    </div>
+
+                    <div className="mb-6">
+                        <label className="block mb-2">
+                            Password
+                        </label>
+
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) =>
+                                setPassword(e.target.value)
+                            }
+                            className="w-full border rounded-lg px-3 py-2"
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-blue-600 text-white py-2 rounded-lg"
+                    >
+                        {loading
+                            ? "กำลังเข้าสู่ระบบ..."
+                            : "เข้าสู่ระบบ"}
+                    </button>
+
+                </form>
+
+            </div>
+
         </div>
-      </div>
-    </div>
-  );
+    );
 }
 
 export default Login;
